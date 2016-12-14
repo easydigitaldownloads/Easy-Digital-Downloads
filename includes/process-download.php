@@ -163,7 +163,7 @@ function edd_process_download() {
 		if ( ( ! isset( $file_details['scheme'] ) || ! in_array( $file_details['scheme'], $schemes ) ) && isset( $file_details['path'] ) && file_exists( $requested_file ) ) {
 
 			/**
-			 * Download method is seto to Redirect in settings but an absolute path was provided
+			 * Download method is set to to Redirect in settings but an absolute path was provided
 			 * We need to switch to a direct download in order for the file to download properly
 			 */
 			$method = 'direct';
@@ -233,15 +233,23 @@ function edd_process_download() {
 
 				}
 
-				if( $direct ) {
+				if ( $direct ) {
+					// Determine if the file we're attempting to use direct on is too large for the memory limit to use direct
+					$memory_limit = @ini_get( 'memory_limit' );
+					if ( $memory_limit ) {
+						$memory_limit_bytes = edd_determine_size_in_bytes( $memory_limit );
+						$file_size          = edd_determine_size_in_bytes( @filesize( $file_path ) );
+
+						// The file we're attempting to load is over 75% of the memory limit of PHP, go to redirect instead.
+						if ( $file_size && ( $file_size / $memory_limit_bytes ) > 0.75 ) {
+							$direct = false;
+						}
+					}
 
 					edd_deliver_download( $file_path );
-
 				} else {
-
-					// The file supplied does not have a discoverable absolute path
+					// The file supplied does not have a discoverable absolute path or exceeds the memory limit to stream as a forced download
 					edd_deliver_download( $requested_file, true );
-
 				}
 
 				break;
@@ -838,3 +846,23 @@ function edd_set_requested_file_scheme( $requested_file, $download_files, $file_
 
 }
 add_filter( 'edd_requested_file', 'edd_set_requested_file_scheme', 10, 3 );
+
+/**
+ * Given a string for a file size, determine the size in bytes
+ * @param string $size A file or memory limit size: 1K, 1M, 1G etc.
+ *
+ * @return bool|int    If no value, false, if a determined value, an integer of the size in bytes.
+ */
+function edd_determine_size_in_bytes( $size = '' ) {
+	if ( $size === '' ) {
+		return false;
+	}
+
+	switch ( strtolower( substr ( $size, -1 ) ) ) {
+		case 'k': return (int) $size * 1024;
+		case 'm': return (int) $size * 1048576;
+		case 'g': return (int) $size * 1073741824;
+		default: return is_numeric( $size ) ? absint( $size ) : false;
+	}
+
+}
