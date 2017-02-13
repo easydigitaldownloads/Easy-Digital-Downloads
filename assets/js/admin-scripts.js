@@ -1340,10 +1340,8 @@ jQuery(document).ready(function ($) {
 						variations: variations,
 					},
 					dataType: "json",
-					beforeSend: function(){
-						$('ul.chosen-results').empty();
-					},
 					success: function( data ) {
+						$(this).find('ul.chosen-results').empty();
 						// Remove all options but those that are selected
 						$('#' + menu_id + ' option:not(:selected)').remove();
 						$.each( data, function( key, item ) {
@@ -1353,8 +1351,10 @@ jQuery(document).ready(function ($) {
 							}
 						});
 						// Update the options
-						$('.edd-select-chosen').trigger('chosen:updated');
-						$('#' + menu_id).next().find('input').val(val);
+						if ( data.length ) {
+							$('.edd-select-chosen').trigger('chosen:updated');
+							$('#' + menu_id).next().find('input').val( val );
+						}
 					}
 				}).fail(function (response) {
 					if ( window.console && window.console.log ) {
