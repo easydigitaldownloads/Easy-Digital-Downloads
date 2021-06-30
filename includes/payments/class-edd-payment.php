@@ -1932,7 +1932,7 @@ class EDD_Payment {
 			$recoverable = true;
 		}
 
-		return $recoverable;
+		return apply_filters( 'edd_payment_is_recoverable', $recoverable, $this );
 	}
 
 	/**
